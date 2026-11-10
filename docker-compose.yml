@@ -1,0 +1,9 @@
+services:
+  stacksense:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      STACKSENSE_LLM: "off"
+      STACKSENSE_HOST: "0.0.0.0"
+      STACKSENSE_PORT: "8000"
