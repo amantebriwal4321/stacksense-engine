@@ -1,0 +1,28 @@
+{
+  "project": {
+    "type": "Web_App",
+    "platforms": [
+      "Web"
+    ]
+  },
+  "scale": {
+    "users_at_launch": -5,
+    "users_12_months": "lots"
+  },
+  "team": {
+    "size": 0,
+    "experience": "guru",
+    "languages": [
+      1
+    ]
+  },
+  "budget": {
+    "monthly_infra_usd": -1
+  },
+  "timeline": {
+    "mvp_weeks": 0
+  },
+  "priorities": {
+    "cost": 9
+  }
+}

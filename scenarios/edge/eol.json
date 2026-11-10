@@ -1,0 +1,42 @@
+{
+  "scenario_id": "EDGE_EOL",
+  "project": {
+    "name": "Leave",
+    "type": "internal_tool",
+    "platforms": [
+      "web"
+    ],
+    "description": "leave requests"
+  },
+  "scale": {
+    "users_at_launch": 200,
+    "users_12_months": 200,
+    "peak_concurrent_users": 30
+  },
+  "team": {
+    "size": 2,
+    "experience": "intermediate",
+    "languages": [
+      "csharp",
+      "sql"
+    ]
+  },
+  "budget": {
+    "monthly_infra_usd": 100
+  },
+  "timeline": {
+    "mvp_weeks": 6
+  },
+  "infrastructure": {
+    "cloud_preference": "azure",
+    "deployment_model": "managed_cloud",
+    "data_residency": "india",
+    "existing_systems": [
+      "SQL Server 2012"
+    ]
+  },
+  "requirements": {
+    "auth": "enterprise_sso",
+    "availability": "99.9"
+  }
+}

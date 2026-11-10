@@ -1,0 +1,133 @@
+{
+  "scenario_id": "P1",
+  "engine_version": "1.0.0",
+  "status": "ok",
+  "summary": "DevFolio should be a static site: Astro built ahead of time, no application server, no database, on Cloudflare Pages (the global edge). The pages are read-heavy and the budget is 0 USD a month.",
+  "architecture_style": "static",
+  "deployment_region": "the global edge",
+  "stack": {
+    "frontend": {
+      "choice": "Astro",
+      "justification": "DevFolio is a content site on web. Twelve month target 3,000 users, peak 50, MVP 2 weeks, 1 beginner engineer. Pre-renders Markdown and pages to static HTML, with small islands of JavaScript only where a page needs them. seo_critical is true, so the public URL has to return real HTML. Team languages: javascript, html, css. The copy is Markdown, which Astro can render at build time.",
+      "driven_by": [
+        "project.type",
+        "project.platforms",
+        "team.languages",
+        "team.experience",
+        "team.size",
+        "timeline.mvp_weeks",
+        "requirements.seo_critical",
+        "scale.users_12_months",
+        "budget.monthly_infra_usd",
+        "project.description"
+      ],
+      "alternatives": [
+        {
+          "choice": "htmx with server templates",
+          "why_not": "htmx with server templates is a looser fit for this team and for this kind of product."
+        },
+        {
+          "choice": "Eleventy",
+          "why_not": "Eleventy is a looser fit for this team and for this kind of product."
+        }
+      ],
+      "tradeoffs": [
+        "A highly interactive app fights the model. Islands get awkward past a simple site."
+      ]
+    },
+    "backend": {
+      "choice": "None",
+      "justification": "No accounts, no writes, no private files, and no payments. A server would be a process to patch in exchange for nothing the page needs.",
+      "driven_by": [
+        "project.type",
+        "requirements.auth",
+        "requirements.payments",
+        "budget.monthly_infra_usd"
+      ],
+      "alternatives": [
+        {
+          "choice": "NestJS",
+          "why_not": "There is no write path, account system, or private data, so a server would only add a bill and a process to patch."
+        }
+      ],
+      "tradeoffs": [
+        "Any future account or form handler means adding a server later."
+      ]
+    },
+    "database": {
+      "choice": "None",
+      "justification": "The pages are generated from files in git. There is no row to store, so there is no database.",
+      "driven_by": [
+        "project.type",
+        "requirements.auth",
+        "scale.data_volume_gb_12_months"
+      ],
+      "alternatives": [
+        {
+          "choice": "PostgreSQL",
+          "why_not": "There is no dynamic data to store. Markdown in git is the source of truth."
+        }
+      ],
+      "tradeoffs": [
+        "A form or an account later means adding a database."
+      ]
+    },
+    "hosting": {
+      "choice": "Cloudflare Pages (the global edge)",
+      "justification": "cloud_preference is any, deployment_model is managed_cloud, data_residency resolves to none. The pin is the global edge. Free static hosting with a global CDN and HTTPS. Right when the site has no user data. team.has_devops is false, so a host with a small control surface beats a cluster. There is no process to keep up. Static hosting is the whole platform.",
+      "driven_by": [
+        "infrastructure.cloud_preference",
+        "infrastructure.deployment_model",
+        "infrastructure.data_residency",
+        "compliance",
+        "budget.monthly_infra_usd",
+        "team.has_devops",
+        "requirements.availability",
+        "scale.peak_concurrent_users"
+      ],
+      "alternatives": [
+        {
+          "choice": "GitHub Pages",
+          "why_not": "GitHub Pages does not match a 12 month target of 3,000 users and a peak of 50."
+        },
+        {
+          "choice": "Netlify",
+          "why_not": "Netlify is a worse fit for a monthly infra budget of 0 USD."
+        }
+      ],
+      "tradeoffs": [
+        "Not a database region. Do not put personal data or a payment record here and call it compliant."
+      ]
+    },
+    "supporting": []
+  },
+  "estimated_monthly_cost_usd": {
+    "min": 0,
+    "max": 0,
+    "assumptions": [
+      "Compute (cloudflare_pages, tiny band) about 0 to 0 USD.",
+      "No database process.",
+      "Scale band is tiny: 3000 users at 12 months, peak 50, 1.0 GB stored.",
+      "This is an order-of-magnitude band, not an invoice. Taxes, support plans, and human time are excluded."
+    ]
+  },
+  "warnings": [
+    {
+      "code": "FREE_TIER",
+      "severity": "info",
+      "message": "The estimate is zero because the choice stays on a free static tier. A custom domain registrar, if you buy one, is outside this band. A traffic spike past the host's fairness limit is the thing to watch.",
+      "fields": [
+        "budget.monthly_infra_usd"
+      ]
+    }
+  ],
+  "assumptions": [
+    "team.vendor_lock_in_tolerance defaulted to medium.",
+    "budget.existing_licences defaulted to an empty list.",
+    "operations.on_call defaulted to false.",
+    "scale.geographic_spread defaulted to local.",
+    "data.sensitivity defaulted to public for a content site with no auth.",
+    "requirements.expected_rps_peak was not set. Capacity uses peak concurrency (50), which is roughly 5 requests per second if about one in ten connected users acts at once."
+  ],
+  "validation_errors": []
+}

@@ -1,0 +1,36 @@
+{
+  "scenario_id": "EDGE_SKILL",
+  "project": {
+    "name": "Bazaar",
+    "type": "ecommerce",
+    "platforms": [
+      "web"
+    ],
+    "description": "catalog and checkout"
+  },
+  "scale": {
+    "users_at_launch": 800,
+    "users_12_months": 8000,
+    "peak_concurrent_users": 60
+  },
+  "team": {
+    "size": 2,
+    "experience": "intermediate",
+    "languages": [
+      "php",
+      "sql"
+    ]
+  },
+  "budget": {
+    "monthly_infra_usd": 60
+  },
+  "timeline": {
+    "mvp_weeks": 8
+  },
+  "requirements": {
+    "auth": "email_password",
+    "payments": true,
+    "seo_critical": true,
+    "availability": "99.9"
+  }
+}

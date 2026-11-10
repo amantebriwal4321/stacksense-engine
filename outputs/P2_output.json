@@ -1,0 +1,375 @@
+{
+  "scenario_id": "P2",
+  "engine_version": "1.0.0",
+  "status": "ok_with_warnings",
+  "summary": "FixIt Now should be a modular monolith in BLR1 (Bangalore). Client: Next.js (web) + Expo (Android). Server: NestJS. Data: PostgreSQL (DigitalOcean Managed PostgreSQL in BLR1 (Bangalore)). Host: DigitalOcean App Platform in BLR1 (Bangalore).",
+  "architecture_style": "modular_monolith",
+  "deployment_region": "BLR1 (Bangalore)",
+  "stack": {
+    "frontend": {
+      "choice": "Next.js (web) + Expo (Android)",
+      "justification": "FixIt Now is a marketplace on web, android. Twelve month target 30,000 users, peak 800, MVP 8 weeks, 3 intermediate engineers. React framework with server rendering and static export, so public pages can rank and logged-in screens can still be rich. One TypeScript codebase for Android and iOS, with expo-sqlite for offline rows. seo_critical is true, so the public URL has to return real HTML. Team languages: javascript, typescript, python.",
+      "driven_by": [
+        "project.type",
+        "project.platforms",
+        "team.languages",
+        "team.experience",
+        "team.size",
+        "timeline.mvp_weeks",
+        "requirements.seo_critical",
+        "scale.users_12_months",
+        "budget.monthly_infra_usd"
+      ],
+      "alternatives": [
+        {
+          "choice": "Nuxt (web) + Expo (Android)",
+          "why_not": "Nuxt (web) + Expo (Android) is a looser fit for this team and for this kind of product."
+        },
+        {
+          "choice": "SvelteKit (web) + Expo (Android)",
+          "why_not": "SvelteKit (web) + Expo (Android) is a weaker match for a marketplace with these priorities. Fewer ready-made enterprise component kits than React."
+        }
+      ],
+      "tradeoffs": [
+        "Heavier than a pure static generator when every page is Markdown.",
+        "Framework upgrades need attention each major.",
+        "On a 2 GB phone the JS runtime is heavier than Kotlin. Ship a release build and keep screens dull."
+      ]
+    },
+    "backend": {
+      "choice": "NestJS",
+      "justification": "A structured TypeScript API. Modules map to orders, chat, and payments without a microservice split. Peak 800, workload balanced, realtime on.",
+      "driven_by": [
+        "team.languages",
+        "team.size",
+        "team.has_devops",
+        "project.type",
+        "requirements.realtime",
+        "scale.peak_concurrent_users",
+        "priorities.performance"
+      ],
+      "alternatives": [
+        {
+          "choice": "FastAPI",
+          "why_not": "FastAPI is a weaker match for a marketplace with these priorities. You assemble auth, migrations, and admin yourself. Django has those, FastAPI does not."
+        },
+        {
+          "choice": "Fastify",
+          "why_not": "Fastify is a looser fit for this team and for this kind of product."
+        }
+      ],
+      "tradeoffs": [
+        "The decorator style is more framework than Fastify, which is fine at three people and noisy at one."
+      ]
+    },
+    "database": {
+      "choice": "PostgreSQL (DigitalOcean Managed PostgreSQL in BLR1 (Bangalore))",
+      "justification": "Relational, ACID, and available as a managed service in Mumbai, the EU, and the US. The default for money, bookings, and tenancy. Placement follows the host pin: BLR1 (Bangalore).",
+      "driven_by": [
+        "project.type",
+        "requirements.payments",
+        "requirements.multi_tenant",
+        "infrastructure.data_residency",
+        "infrastructure.cloud_preference",
+        "requirements.availability",
+        "scale.users_12_months",
+        "team.vendor_lock_in_tolerance"
+      ],
+      "alternatives": [
+        {
+          "choice": "MySQL",
+          "why_not": "MySQL is a looser fit for this team and for this kind of product."
+        },
+        {
+          "choice": "Microsoft SQL Server",
+          "why_not": "Microsoft SQL Server is a worse fit for a monthly infra budget of 150 USD."
+        }
+      ],
+      "tradeoffs": [
+        "A single small node will not meet 99.99 on its own. You pay for a standby.",
+        "Very large analytical scans want a column store beside it, not instead of it, once you pass a few terabytes."
+      ]
+    },
+    "hosting": {
+      "choice": "DigitalOcean App Platform in BLR1 (Bangalore)",
+      "justification": "cloud_preference is any, deployment_model is managed_cloud, data_residency resolves to india. The pin is BLR1 (Bangalore). A small PaaS with a Bangalore region (BLR1), managed Postgres, and Spaces. The bill is readable. team.has_devops is false, so a host with a small control surface beats a cluster.",
+      "driven_by": [
+        "infrastructure.cloud_preference",
+        "infrastructure.deployment_model",
+        "infrastructure.data_residency",
+        "compliance",
+        "budget.monthly_infra_usd",
+        "team.has_devops",
+        "requirements.availability",
+        "scale.peak_concurrent_users"
+      ],
+      "alternatives": [
+        {
+          "choice": "Azure App Service",
+          "why_not": "Azure App Service is a worse fit for a monthly infra budget of 150 USD."
+        },
+        {
+          "choice": "Google Cloud Run",
+          "why_not": "Google Cloud Run is a worse fit for a monthly infra budget of 150 USD."
+        }
+      ],
+      "tradeoffs": [
+        "No HIPAA BAA.",
+        "Past a few thousand concurrent sockets you want a hyperscaler.",
+        "Fewer compliance attestations than AWS or Azure."
+      ]
+    },
+    "supporting": [
+      {
+        "layer": "cache",
+        "choice": "Managed Valkey in BLR1 (Bangalore)",
+        "justification": "Peak concurrency is 800. A small cache holds sessions, OTP attempts, and hot reads so the database is not the first thing to fall over.",
+        "driven_by": [
+          "scale.peak_concurrent_users",
+          "requirements.availability",
+          "requirements.realtime"
+        ],
+        "alternatives": [
+          {
+            "choice": "An in-process cache inside the API",
+            "why_not": "The managed cache is the same protocol with backups and a patch cycle already solved."
+          }
+        ],
+        "tradeoffs": [
+          "Another process to watch. At a small size it can share a node with the queue."
+        ]
+      },
+      {
+        "layer": "queue",
+        "choice": "BullMQ on Valkey",
+        "justification": "Node already speaks this queue, so webhooks get retries without a new vendor. Payments, scoring, or write spikes should retry on their own.",
+        "driven_by": [
+          "requirements.payments",
+          "requirements.ml_features",
+          "scale.workload",
+          "scale.users_12_months"
+        ],
+        "alternatives": [
+          {
+            "choice": "Amazon SQS",
+            "why_not": "The workload is not on AWS, so SQS would be a second cloud."
+          }
+        ],
+        "tradeoffs": [
+          "Poison messages need a dead-letter view, or they vanish into retries."
+        ]
+      },
+      {
+        "layer": "search",
+        "choice": "PostgreSQL full-text search",
+        "justification": "full_text_search is true and the stored text is about 50.0 GB. A database index answers that without another service to patch.",
+        "driven_by": [
+          "requirements.full_text_search",
+          "scale.data_volume_gb_12_months"
+        ],
+        "alternatives": [
+          {
+            "choice": "Typesense",
+            "why_not": "A dedicated search box is the right upgrade once relevance or the index size hurts, and it is not the MVP constraint."
+          }
+        ],
+        "tradeoffs": [
+          "Database search is good, not magical. Ranking tweaks are SQL, not a tuning UI."
+        ]
+      },
+      {
+        "layer": "auth",
+        "choice": "App-managed OTP via MSG91",
+        "justification": "Phone OTP for users in India should use a domestic SMS route (DLT-registered). MSG91 is that route. Store only a hash of the code, in the India database.",
+        "driven_by": [
+          "requirements.auth",
+          "infrastructure.data_residency",
+          "compliance"
+        ],
+        "alternatives": [
+          {
+            "choice": "Twilio",
+            "why_not": "It works, and it is a worse fit for the residency of the phone numbers."
+          },
+          {
+            "choice": "Firebase Auth",
+            "why_not": "The user record would sit in a Google project whose region story is easy to get wrong, and phone-auth pricing surprises small budgets."
+          }
+        ],
+        "tradeoffs": [
+          "SMS cost scales with logins, not with servers. A noisy retry loop will blow the budget before the database does."
+        ]
+      },
+      {
+        "layer": "storage",
+        "choice": "DigitalOcean Spaces in BLR1 (Bangalore)",
+        "justification": "Uploads have to live somewhere durable. The bucket is private. The app issues short-lived URLs. KYC, health, or customer files do not sit on a public CDN.",
+        "driven_by": [
+          "requirements.file_media_storage",
+          "infrastructure.data_residency",
+          "data.sensitivity",
+          "compliance"
+        ],
+        "alternatives": [
+          {
+            "choice": "Amazon S3 in ap-south-1",
+            "why_not": "A second file system splits retention and access reviews. One bucket next to the app is enough."
+          }
+        ],
+        "tradeoffs": [
+          "Lifecycle rules are part of the design. Nobody deletes old uploads unless you ask the bucket to."
+        ]
+      },
+      {
+        "layer": "realtime",
+        "choice": "Socket.IO on the API process",
+        "justification": "realtime is true and the peak is 800. One Socket.IO process on the API covers chat and job status. Add the Valkey adapter only when you run a second copy.",
+        "driven_by": [
+          "requirements.realtime",
+          "scale.peak_concurrent_users",
+          "requirements.p95_latency_ms",
+          "team.languages"
+        ],
+        "alternatives": [
+          {
+            "choice": "A managed socket vendor (Ably or Pusher)",
+            "why_not": "A managed realtime vendor stores the hot path outside the region pin, and it is a new bill for a problem the API can hold."
+          }
+        ],
+        "tradeoffs": [
+          "Sticky sessions or a pub/sub adapter are mandatory once you run two copies. One copy is a single point of failure."
+        ]
+      },
+      {
+        "layer": "payments",
+        "choice": "Razorpay",
+        "justification": "Payments in India, including UPI, should go through an RBI-authorised payment aggregator. Razorpay is that aggregator. Card numbers and UPI secrets stay on their side, which keeps this app out of full PCI scope.",
+        "driven_by": [
+          "requirements.payments",
+          "infrastructure.data_residency",
+          "compliance",
+          "project.description"
+        ],
+        "alternatives": [
+          {
+            "choice": "Cashfree",
+            "why_not": "Cashfree is the other large India aggregator. Razorpay was chosen for payouts and the docs a small team will actually read."
+          }
+        ],
+        "tradeoffs": [
+          "Do not store PAN, CVV, or UPI PIN. If you do, PCI scope explodes and this recommendation no longer holds."
+        ]
+      },
+      {
+        "layer": "ci_cd",
+        "choice": "GitHub Actions",
+        "justification": "A short pipeline: test, then deploy with short-lived cloud credentials. Keep production secrets out of the repo.",
+        "driven_by": [
+          "team.size",
+          "team.has_devops",
+          "infrastructure.deployment_model"
+        ],
+        "alternatives": [
+          {
+            "choice": "GitLab CI",
+            "why_not": "It is a fine CI. It is also a second account this team has not said they already run."
+          }
+        ],
+        "tradeoffs": [
+          "A green pipeline is not a test plan. Someone still has to write the tests."
+        ]
+      },
+      {
+        "layer": "observability",
+        "choice": "DigitalOcean App Platform metrics",
+        "justification": "Availability target is 99.9. You need a health check, a latency chart, and an alert that reaches a person. Keep the logs in the same region as the data.",
+        "driven_by": [
+          "requirements.availability",
+          "team.has_devops",
+          "scale.users_12_months"
+        ],
+        "alternatives": [
+          {
+            "choice": "A separate Grafana stack",
+            "why_not": "More moving parts, or a log vendor that may store text outside the pin."
+          }
+        ],
+        "tradeoffs": [
+          "Log volume is a bill. Sample debug lines. Do not log OTP codes, tokens, or payment payloads."
+        ]
+      }
+    ]
+  },
+  "estimated_monthly_cost_usd": {
+    "min": 67,
+    "max": 133,
+    "assumptions": [
+      "Compute (do_app, small band) about 12 to 50 USD.",
+      "PostgreSQL (do, small band) about 15 to 31 USD.",
+      "Managed cache (do) about 15 to 15 USD.",
+      "DigitalOcean Spaces is about 5 USD per month and includes 250 GiB.",
+      "Payment gateway fees are a percentage of volume and are not in this infra band.",
+      "SMS OTP is usage priced. The band assumes a fraction of users request a code each month, about 0.004 USD per active user, and ignores promotional SMS.",
+      "CI minutes are assumed inside the free tier for this team size.",
+      "Scale band is small: 30000 users at 12 months, peak 800, 50.0 GB stored.",
+      "This is an order-of-magnitude band, not an invoice. Taxes, support plans, and human time are excluded."
+    ]
+  },
+  "warnings": [
+    {
+      "code": "SMS_COST",
+      "severity": "warning",
+      "message": "OTP SMS is usage priced and can pass the infra budget on its own. Cap retries, and watch the SMS bill as a separate line.",
+      "fields": [
+        "requirements.auth",
+        "budget.monthly_infra_usd"
+      ]
+    },
+    {
+      "code": "TIMELINE_TIGHT",
+      "severity": "warning",
+      "message": "The MVP window is 8 weeks. A modular monolith across web, android usually wants about 10 weeks for a team this size. Cut scope before you cut the hard constraints.",
+      "fields": [
+        "timeline.mvp_weeks",
+        "project.platforms",
+        "team.size"
+      ]
+    },
+    {
+      "code": "DPDP",
+      "severity": "info",
+      "message": "DPDP applies. You still need a lawful purpose, a consent or legitimate-use record, a retention period, and a way for a person to access or erase their data. The region pin is not the whole duty.",
+      "fields": [
+        "compliance"
+      ]
+    },
+    {
+      "code": "OVERENGINEERING_AVOIDED",
+      "severity": "info",
+      "message": "Microservices and Kubernetes were not chosen. The team is 3 and the 12 month user count is 30,000. A single deployable is the design until those numbers move.",
+      "fields": [
+        "team.size",
+        "scale.users_12_months",
+        "team.has_devops"
+      ]
+    },
+    {
+      "code": "PCI_SCOPE",
+      "severity": "info",
+      "message": "Keep card data at the payment aggregator and this app stays on the short PCI questionnaire. The moment you store PAN or CVV, stop and redesign.",
+      "fields": [
+        "compliance",
+        "requirements.payments"
+      ]
+    }
+  ],
+  "assumptions": [
+    "team.vendor_lock_in_tolerance defaulted to medium.",
+    "budget.existing_licences defaulted to an empty list.",
+    "operations.on_call defaulted to false.",
+    "scale.geographic_spread defaulted to national because data_residency is india.",
+    "data.sensitivity defaulted to confidential because a privacy law is set.",
+    "requirements.expected_rps_peak was not set. Capacity uses peak concurrency (800), which is roughly 80 requests per second if about one in ten connected users acts at once."
+  ],
+  "validation_errors": []
+}

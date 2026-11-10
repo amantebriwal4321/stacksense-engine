@@ -1,0 +1,57 @@
+{
+  "scenario_id": "EDGE_BUDGET",
+  "project": {
+    "name": "TinyBank",
+    "type": "fintech",
+    "description": "upi loans with a ledger",
+    "platforms": [
+      "web",
+      "android"
+    ]
+  },
+  "scale": {
+    "users_at_launch": 50000,
+    "users_12_months": 400000,
+    "peak_concurrent_users": 8000,
+    "traffic_pattern": "spiky",
+    "workload": "balanced",
+    "data_volume_gb_12_months": 200
+  },
+  "team": {
+    "size": 4,
+    "experience": "senior",
+    "languages": [
+      "java"
+    ],
+    "has_devops": true
+  },
+  "budget": {
+    "monthly_infra_usd": 0
+  },
+  "timeline": {
+    "mvp_weeks": 16
+  },
+  "infrastructure": {
+    "cloud_preference": "aws",
+    "deployment_model": "managed_cloud",
+    "data_residency": "india",
+    "existing_systems": []
+  },
+  "requirements": {
+    "payments": true,
+    "auth": "phone_otp",
+    "file_media_storage": true,
+    "ml_features": "inference_api",
+    "availability": "99.95",
+    "realtime": false,
+    "offline_support": false,
+    "full_text_search": false,
+    "multi_tenant": false,
+    "seo_critical": false,
+    "p95_latency_ms": 300
+  },
+  "compliance": [
+    "rbi_localisation",
+    "pci_dss"
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "scenario_id": "EDGE_AIRGAP",
+  "project": {
+    "name": "Vault",
+    "type": "internal_tool",
+    "description": "air gapped plant log",
+    "platforms": [
+      "web"
+    ]
+  },
+  "scale": {
+    "users_at_launch": 40,
+    "users_12_months": 80,
+    "peak_concurrent_users": 10,
+    "workload": "read_heavy",
+    "traffic_pattern": "steady",
+    "data_volume_gb_12_months": 5
+  },
+  "team": {
+    "size": 2,
+    "experience": "intermediate",
+    "languages": [
+      "python"
+    ]
+  },
+  "budget": {
+    "monthly_infra_usd": 0
+  },
+  "timeline": {
+    "mvp_weeks": 8
+  },
+  "infrastructure": {
+    "cloud_preference": "any",
+    "deployment_model": "air_gapped",
+    "data_residency": "india",
+    "existing_systems": [
+      "SQL Server 2012",
+      "Fauna"
+    ]
+  },
+  "requirements": {
+    "auth": "social",
+    "payments": true,
+    "availability": "99"
+  },
+  "compliance": []
+}

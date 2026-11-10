@@ -1,0 +1,285 @@
+{
+  "scenario_id": "P6",
+  "engine_version": "1.0.0",
+  "status": "ok_with_warnings",
+  "summary": "KhetSurvey should be a monolith in BLR1 (Bangalore). Client: Expo (React Native). Server: FastAPI. Data: PostgreSQL (DigitalOcean Managed PostgreSQL in BLR1 (Bangalore)). Host: DigitalOcean App Platform in BLR1 (Bangalore).",
+  "architecture_style": "monolith",
+  "deployment_region": "BLR1 (Bangalore)",
+  "stack": {
+    "frontend": {
+      "choice": "Expo (React Native)",
+      "justification": "KhetSurvey is an other on android. Twelve month target 2,000 users, peak 200, MVP 10 weeks, 2 mixed engineers. One TypeScript codebase for Android and iOS, with expo-sqlite for offline rows. Team languages: javascript, python. offline_support is true, so the client keeps its own queue. The description calls out weak phones, so a heavier toolkit had to earn its place.",
+      "driven_by": [
+        "project.type",
+        "project.platforms",
+        "team.languages",
+        "team.experience",
+        "team.size",
+        "timeline.mvp_weeks",
+        "requirements.offline_support",
+        "scale.users_12_months",
+        "budget.monthly_infra_usd",
+        "project.description"
+      ],
+      "alternatives": [
+        {
+          "choice": "Kotlin and Jetpack Compose",
+          "why_not": "Kotlin and Jetpack Compose needs kotlin, and this team does not list them."
+        },
+        {
+          "choice": "Flutter",
+          "why_not": "Flutter needs dart, and this team does not list them."
+        }
+      ],
+      "tradeoffs": [
+        "On a 2 GB phone the JS runtime is heavier than Kotlin. Ship a release build and keep screens dull.",
+        "Store review and native modules still need a real device lab."
+      ]
+    },
+    "backend": {
+      "choice": "FastAPI",
+      "justification": "A typed Python API. Quick to build, and a natural home for a sync or scoring endpoint. Peak 200, workload write_heavy, realtime off.",
+      "driven_by": [
+        "team.languages",
+        "team.size",
+        "team.has_devops",
+        "project.type",
+        "requirements.realtime",
+        "scale.peak_concurrent_users",
+        "priorities.performance"
+      ],
+      "alternatives": [
+        {
+          "choice": "NestJS",
+          "why_not": "NestJS is a weaker match for an other with these priorities. The decorator style is more framework than Fastify, which is fine at three people and noisy at one."
+        },
+        {
+          "choice": "Django",
+          "why_not": "Django is a weaker match for an other with these priorities. Live sockets are not the happy path. A realtime-heavy product wants a different core."
+        }
+      ],
+      "tradeoffs": [
+        "You assemble auth, migrations, and admin yourself. Django has those, FastAPI does not."
+      ]
+    },
+    "database": {
+      "choice": "PostgreSQL (DigitalOcean Managed PostgreSQL in BLR1 (Bangalore))",
+      "justification": "Relational, ACID, and available as a managed service in Mumbai, the EU, and the US. The default for money, bookings, and tenancy. Placement follows the host pin: BLR1 (Bangalore).",
+      "driven_by": [
+        "project.type",
+        "requirements.payments",
+        "requirements.multi_tenant",
+        "infrastructure.data_residency",
+        "infrastructure.cloud_preference",
+        "requirements.availability",
+        "scale.users_12_months",
+        "team.vendor_lock_in_tolerance"
+      ],
+      "alternatives": [
+        {
+          "choice": "MySQL",
+          "why_not": "MySQL is a looser fit for this team and for this kind of product."
+        },
+        {
+          "choice": "MongoDB",
+          "why_not": "MongoDB is a worse fit for a monthly infra budget of 100 USD."
+        }
+      ],
+      "tradeoffs": [
+        "A single small node will not meet 99.99 on its own. You pay for a standby.",
+        "Very large analytical scans want a column store beside it, not instead of it, once you pass a few terabytes."
+      ]
+    },
+    "hosting": {
+      "choice": "DigitalOcean App Platform in BLR1 (Bangalore)",
+      "justification": "cloud_preference is any, deployment_model is managed_cloud, data_residency resolves to india. The pin is BLR1 (Bangalore). A small PaaS with a Bangalore region (BLR1), managed Postgres, and Spaces. The bill is readable. team.has_devops is false, so a host with a small control surface beats a cluster.",
+      "driven_by": [
+        "infrastructure.cloud_preference",
+        "infrastructure.deployment_model",
+        "infrastructure.data_residency",
+        "compliance",
+        "budget.monthly_infra_usd",
+        "team.has_devops",
+        "requirements.availability",
+        "scale.peak_concurrent_users"
+      ],
+      "alternatives": [
+        {
+          "choice": "Azure App Service",
+          "why_not": "Azure App Service is a worse fit for a monthly infra budget of 100 USD."
+        },
+        {
+          "choice": "Google Cloud Run",
+          "why_not": "Google Cloud Run is a worse fit for a monthly infra budget of 100 USD."
+        }
+      ],
+      "tradeoffs": [
+        "No HIPAA BAA.",
+        "Past a few thousand concurrent sockets you want a hyperscaler.",
+        "Fewer compliance attestations than AWS or Azure."
+      ]
+    },
+    "supporting": [
+      {
+        "layer": "auth",
+        "choice": "App-managed OTP via MSG91",
+        "justification": "Phone OTP for users in India should use a domestic SMS route (DLT-registered). MSG91 is that route. Store only a hash of the code, in the India database.",
+        "driven_by": [
+          "requirements.auth",
+          "infrastructure.data_residency",
+          "compliance"
+        ],
+        "alternatives": [
+          {
+            "choice": "Twilio",
+            "why_not": "It works, and it is a worse fit for the residency of the phone numbers."
+          },
+          {
+            "choice": "Firebase Auth",
+            "why_not": "The user record would sit in a Google project whose region story is easy to get wrong, and phone-auth pricing surprises small budgets."
+          }
+        ],
+        "tradeoffs": [
+          "SMS cost scales with logins, not with servers. A noisy retry loop will blow the budget before the database does."
+        ]
+      },
+      {
+        "layer": "storage",
+        "choice": "DigitalOcean Spaces in BLR1 (Bangalore)",
+        "justification": "Uploads have to live somewhere durable. The bucket is private. The app issues short-lived URLs. KYC, health, or customer files do not sit on a public CDN.",
+        "driven_by": [
+          "requirements.file_media_storage",
+          "infrastructure.data_residency",
+          "data.sensitivity",
+          "compliance"
+        ],
+        "alternatives": [
+          {
+            "choice": "Amazon S3 in ap-south-1",
+            "why_not": "A second file system splits retention and access reviews. One bucket next to the app is enough."
+          }
+        ],
+        "tradeoffs": [
+          "Lifecycle rules are part of the design. Nobody deletes old uploads unless you ask the bucket to."
+        ]
+      },
+      {
+        "layer": "ci_cd",
+        "choice": "GitHub Actions",
+        "justification": "A short pipeline: test, then deploy with short-lived cloud credentials. Keep production secrets out of the repo.",
+        "driven_by": [
+          "team.size",
+          "team.has_devops",
+          "infrastructure.deployment_model"
+        ],
+        "alternatives": [
+          {
+            "choice": "GitLab CI",
+            "why_not": "It is a fine CI. It is also a second account this team has not said they already run."
+          }
+        ],
+        "tradeoffs": [
+          "A green pipeline is not a test plan. Someone still has to write the tests."
+        ]
+      },
+      {
+        "layer": "other",
+        "choice": "SQLite on the device, with an outbound sync queue",
+        "justification": "offline_support is true. The phone keeps survey or job rows locally and posts them when the network returns. SQLite is the maintained on-device store. Compress photos before they join the queue.",
+        "driven_by": [
+          "requirements.offline_support",
+          "project.platforms",
+          "project.description"
+        ],
+        "alternatives": [
+          {
+            "choice": "MongoDB Realm and Atlas Device Sync",
+            "why_not": "Atlas Device Sync and the Realm SDKs were removed on 30 September 2025. A new app should not start there."
+          }
+        ],
+        "tradeoffs": [
+          "Conflicts are your code. Last-write-wins is a product decision, not a database feature."
+        ]
+      }
+    ]
+  },
+  "estimated_monthly_cost_usd": {
+    "min": 32,
+    "max": 98,
+    "assumptions": [
+      "Compute (do_app, small band) about 12 to 50 USD.",
+      "PostgreSQL (do, small band) about 15 to 31 USD.",
+      "DigitalOcean Spaces is about 5 USD per month and includes 250 GiB.",
+      "SMS OTP is usage priced. The band assumes a fraction of users request a code each month, about 0.004 USD per active user, and ignores promotional SMS.",
+      "CI minutes are assumed inside the free tier for this team size.",
+      "Scale band is small: 2000 users at 12 months, peak 200, 100.0 GB stored.",
+      "This is an order-of-magnitude band, not an invoice. Taxes, support plans, and human time are excluded."
+    ]
+  },
+  "warnings": [
+    {
+      "code": "LOW_BANDWIDTH_MEDIA",
+      "severity": "warning",
+      "message": "The network in the description is weak. Downscale photos on the device (1280 px on the long edge is enough) before they join the upload queue.",
+      "fields": [
+        "project.description",
+        "requirements.file_media_storage",
+        "requirements.offline_support"
+      ]
+    },
+    {
+      "code": "LOW_END_DEVICE",
+      "severity": "warning",
+      "message": "The description mentions low-RAM phones. Ship a release build, keep the screen count small, and test on a 2 GB device. A debug build is not the test.",
+      "fields": [
+        "project.description",
+        "project.platforms"
+      ]
+    },
+    {
+      "code": "SMS_COST",
+      "severity": "warning",
+      "message": "OTP SMS is usage priced and can pass the infra budget on its own. Cap retries, and watch the SMS bill as a separate line.",
+      "fields": [
+        "requirements.auth",
+        "budget.monthly_infra_usd"
+      ]
+    },
+    {
+      "code": "DPDP",
+      "severity": "info",
+      "message": "DPDP applies. You still need a lawful purpose, a consent or legitimate-use record, a retention period, and a way for a person to access or erase their data. The region pin is not the whole duty.",
+      "fields": [
+        "compliance"
+      ]
+    },
+    {
+      "code": "LOCATION_DATA",
+      "severity": "info",
+      "message": "GPS points are personal data. Store the consent flag on the same row and set a retention period.",
+      "fields": [
+        "project.description",
+        "compliance"
+      ]
+    },
+    {
+      "code": "OVERENGINEERING_AVOIDED",
+      "severity": "info",
+      "message": "Microservices and Kubernetes were not chosen. The team is 2 and the 12 month user count is 2,000. A single deployable is the design until those numbers move.",
+      "fields": [
+        "team.size",
+        "scale.users_12_months",
+        "team.has_devops"
+      ]
+    }
+  ],
+  "assumptions": [
+    "team.vendor_lock_in_tolerance defaulted to medium.",
+    "budget.existing_licences defaulted to an empty list.",
+    "operations.on_call defaulted to false.",
+    "scale.geographic_spread defaulted to national because data_residency is india.",
+    "data.sensitivity defaulted to confidential because a privacy law is set.",
+    "requirements.expected_rps_peak was not set. Capacity uses peak concurrency (200), which is roughly 20 requests per second if about one in ten connected users acts at once."
+  ],
+  "validation_errors": []
+}

@@ -1,0 +1,254 @@
+{
+  "scenario_id": "P5",
+  "engine_version": "1.0.0",
+  "status": "ok_with_warnings",
+  "summary": "PeopleDesk should be a monolith in Central India (Pune). Client: ASP.NET Core Razor Pages. Server: ASP.NET Core (.NET 10). Data: Microsoft SQL Server 2019 (existing). Host: Azure App Service in Central India (Pune).",
+  "architecture_style": "monolith",
+  "deployment_region": "Central India (Pune)",
+  "stack": {
+    "frontend": {
+      "choice": "ASP.NET Core Razor Pages",
+      "justification": "PeopleDesk is an internal tool on web. Twelve month target 1,500 users, peak 300, MVP 6 weeks, 2 intermediate engineers. Server-rendered pages in C#. Forms, validation, and auth sit in the same project as the domain code. Team languages: csharp, sql, javascript.",
+      "driven_by": [
+        "project.type",
+        "project.platforms",
+        "team.languages",
+        "team.experience",
+        "team.size",
+        "timeline.mvp_weeks",
+        "requirements.seo_critical",
+        "scale.users_12_months",
+        "budget.monthly_infra_usd"
+      ],
+      "alternatives": [
+        {
+          "choice": "Blazor",
+          "why_not": "Blazor is more project than 6 weeks allows here."
+        },
+        {
+          "choice": "htmx with server templates",
+          "why_not": "htmx with server templates is a looser fit for this team and for this kind of product."
+        }
+      ],
+      "tradeoffs": [
+        "A rich client app means more JavaScript or a move to Blazor later."
+      ]
+    },
+    "backend": {
+      "choice": "ASP.NET Core (.NET 10)",
+      "justification": "C# API and web host on .NET 10, the current LTS, supported to November 2028. .NET 8 support ends in November 2026, so a new build should not start there. Peak 300, workload read_heavy, realtime off.",
+      "driven_by": [
+        "team.languages",
+        "team.size",
+        "team.has_devops",
+        "project.type",
+        "requirements.realtime",
+        "scale.peak_concurrent_users",
+        "priorities.performance"
+      ],
+      "alternatives": [
+        {
+          "choice": "Fastify",
+          "why_not": "Fastify is a looser fit for this team and for this kind of product."
+        },
+        {
+          "choice": "NestJS",
+          "why_not": "NestJS is a looser fit for this team and for this kind of product."
+        }
+      ],
+      "tradeoffs": [
+        "The best hosting story is on Azure, though the runtime itself is portable.",
+        "Kestrel behind a single on-prem database is only as available as that database."
+      ]
+    },
+    "database": {
+      "choice": "Microsoft SQL Server 2019 (existing)",
+      "justification": "Microsoft SQL Server 2019 (existing) is already in the environment. New product tables go there, over a private network path, instead of standing up a second system of record during the MVP.",
+      "driven_by": [
+        "infrastructure.existing_systems",
+        "project.type",
+        "requirements.payments"
+      ],
+      "alternatives": [
+        {
+          "choice": "Azure SQL Database",
+          "why_not": "Moving the data during a short MVP is a migration project, not a feature project."
+        },
+        {
+          "choice": "PostgreSQL",
+          "why_not": "A second database would split the system of record. The existing SQL Server already stores the company's rows."
+        }
+      ],
+      "tradeoffs": [
+        "Licence cost is real if you do not already own it.",
+        "A 2019 instance is in extended support. New builds should prefer SQL Server 2022 or Azure SQL."
+      ]
+    },
+    "hosting": {
+      "choice": "Azure App Service in Central India (Pune)",
+      "justification": "cloud_preference is azure, deployment_model is managed_cloud, data_residency resolves to india. The pin is Central India (Pune). Managed web apps, including Central India. The straight path for ASP.NET Core next to Entra ID. The app runs in Azure and reaches the on-prem SQL Server over a private path (Hybrid Connection or a site VPN). ExpressRoute is out of this budget. team.has_devops is false, so a host with a small control surface beats a cluster.",
+      "driven_by": [
+        "infrastructure.cloud_preference",
+        "infrastructure.deployment_model",
+        "infrastructure.data_residency",
+        "compliance",
+        "budget.monthly_infra_usd",
+        "team.has_devops",
+        "requirements.availability",
+        "scale.peak_concurrent_users"
+      ],
+      "alternatives": [
+        {
+          "choice": "Amazon EC2",
+          "why_not": "deployment_model is managed_cloud, so the team should not own the OS."
+        },
+        {
+          "choice": "Azure Virtual Machines",
+          "why_not": "deployment_model is managed_cloud, so the team should not own the OS."
+        }
+      ],
+      "tradeoffs": [
+        "Plan tiers jump in price.",
+        "A single on-prem database behind the app caps your real availability."
+      ]
+    },
+    "supporting": [
+      {
+        "layer": "auth",
+        "choice": "Microsoft Entra ID",
+        "justification": "Microsoft Entra ID is already in the environment. The app should trust that tenant over OpenID Connect instead of inventing accounts.",
+        "driven_by": [
+          "requirements.auth",
+          "infrastructure.existing_systems",
+          "infrastructure.cloud_preference"
+        ],
+        "alternatives": [
+          {
+            "choice": "Keycloak",
+            "why_not": "A second directory means two places to disable a leaver."
+          }
+        ],
+        "tradeoffs": [
+          "Conditional access and guest users still need a tenant admin. The app only consumes the token."
+        ]
+      },
+      {
+        "layer": "storage",
+        "choice": "Azure Blob Storage in Central India (Pune)",
+        "justification": "Uploads have to live somewhere durable. Keep the bucket in Central India (Pune) so it matches the database pin.",
+        "driven_by": [
+          "requirements.file_media_storage",
+          "infrastructure.data_residency",
+          "data.sensitivity",
+          "compliance"
+        ],
+        "alternatives": [
+          {
+            "choice": "SharePoint via Microsoft Graph",
+            "why_not": "A second file system splits retention and access reviews. One bucket next to the app is enough."
+          }
+        ],
+        "tradeoffs": [
+          "Lifecycle rules are part of the design. Nobody deletes old uploads unless you ask the bucket to."
+        ]
+      },
+      {
+        "layer": "ci_cd",
+        "choice": "GitHub Actions",
+        "justification": "A short pipeline: test, then deploy with short-lived cloud credentials. Keep production secrets out of the repo.",
+        "driven_by": [
+          "team.size",
+          "team.has_devops",
+          "infrastructure.deployment_model"
+        ],
+        "alternatives": [
+          {
+            "choice": "Azure Pipelines",
+            "why_not": "It is a fine CI. It is also a second account this team has not said they already run."
+          }
+        ],
+        "tradeoffs": [
+          "A green pipeline is not a test plan. Someone still has to write the tests."
+        ]
+      },
+      {
+        "layer": "observability",
+        "choice": "Azure Application Insights",
+        "justification": "Availability target is 99.9. You need a health check, a latency chart, and an alert that reaches a person. Keep the logs in the same region as the data.",
+        "driven_by": [
+          "requirements.availability",
+          "team.has_devops",
+          "scale.users_12_months"
+        ],
+        "alternatives": [
+          {
+            "choice": "Self-hosted Grafana",
+            "why_not": "More moving parts, or a log vendor that may store text outside the pin."
+          }
+        ],
+        "tradeoffs": [
+          "Log volume is a bill. Sample debug lines. Do not log OTP codes, tokens, or payment payloads."
+        ]
+      }
+    ]
+  },
+  "estimated_monthly_cost_usd": {
+    "min": 19,
+    "max": 111,
+    "assumptions": [
+      "Compute (azure_appservice, small band) about 13 to 55 USD.",
+      "The SQL Server licence is treated as already owned. This band is the incremental infra only.",
+      "Object storage is priced near 0.023 USD per GB-month plus requests. Egress is the part that moves the top of the band.",
+      "Application Insights ingestion on a light sampling rate.",
+      "CI minutes are assumed inside the free tier for this team size.",
+      "Scale band is small: 1500 users at 12 months, peak 300, 20.0 GB stored.",
+      "This is an order-of-magnitude band, not an invoice. Taxes, support plans, and human time are excluded."
+    ]
+  },
+  "warnings": [
+    {
+      "code": "AVAILABILITY_ONPREM",
+      "severity": "warning",
+      "message": "The target is 99.9, and the database is an existing on-prem SQL Server. The cloud app cannot be more available than that server. Confirm backups and a second replica before you publish the number.",
+      "fields": [
+        "requirements.availability",
+        "infrastructure.existing_systems"
+      ]
+    },
+    {
+      "code": "EOL_EXISTING_SYSTEM",
+      "severity": "warning",
+      "message": "On-prem SQL Server 2019: Mainstream support ended on 28 February 2025. Extended support, security fixes only, runs to 8 January 2030.",
+      "fields": [
+        "infrastructure.existing_systems"
+      ]
+    },
+    {
+      "code": "OVERENGINEERING_AVOIDED",
+      "severity": "info",
+      "message": "Microservices and Kubernetes were not chosen. The team is 2 and the 12 month user count is 1,500. A single deployable is the design until those numbers move.",
+      "fields": [
+        "team.size",
+        "scale.users_12_months",
+        "team.has_devops"
+      ]
+    },
+    {
+      "code": "SHARED_RESPONSIBILITY",
+      "severity": "info",
+      "message": "ISO 27001 or SOC 2 on the vendor does not certify this product. You still need access reviews, backups, and an owner for incidents.",
+      "fields": [
+        "compliance"
+      ]
+    }
+  ],
+  "assumptions": [
+    "team.vendor_lock_in_tolerance defaulted to medium.",
+    "budget.existing_licences defaulted to an empty list.",
+    "operations.on_call defaulted to false.",
+    "scale.geographic_spread defaulted to national because data_residency is india.",
+    "data.sensitivity defaulted to internal for an internal tool.",
+    "requirements.expected_rps_peak was not set. Capacity uses peak concurrency (300), which is roughly 30 requests per second if about one in ten connected users acts at once."
+  ],
+  "validation_errors": []
+}

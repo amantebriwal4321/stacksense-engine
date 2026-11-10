@@ -1,0 +1,373 @@
+{
+  "scenario_id": "P3",
+  "engine_version": "1.0.0",
+  "status": "ok_with_warnings",
+  "summary": "BoardRoom should be a modular monolith in eu-central-1 (Frankfurt). Client: React (Vite). Server: Go (net/http). Data: PostgreSQL (Amazon RDS for PostgreSQL in eu-central-1 (Frankfurt)). Host: Amazon ECS on Fargate in eu-central-1 (Frankfurt).",
+  "architecture_style": "modular_monolith",
+  "deployment_region": "eu-central-1 (Frankfurt)",
+  "stack": {
+    "frontend": {
+      "choice": "React (Vite)",
+      "justification": "BoardRoom is a realtime collab on web. Twelve month target 50,000 users, peak 5,000, MVP 12 weeks, 5 senior engineers. A client-rendered React app built by Vite. Fast to work in when pages do not need to rank. Team languages: typescript, go.",
+      "driven_by": [
+        "project.type",
+        "project.platforms",
+        "team.languages",
+        "team.experience",
+        "team.size",
+        "timeline.mvp_weeks",
+        "requirements.seo_critical",
+        "scale.users_12_months",
+        "budget.monthly_infra_usd"
+      ],
+      "alternatives": [
+        {
+          "choice": "Next.js",
+          "why_not": "Next.js is a weaker match for a realtime collab with these priorities."
+        },
+        {
+          "choice": "SvelteKit",
+          "why_not": "SvelteKit is a weaker match for a realtime collab with these priorities. Fewer ready-made enterprise component kits than React."
+        }
+      ],
+      "tradeoffs": [
+        "Search engines get an empty shell unless you add pre-rendering.",
+        "Create React App is not the toolchain. It was deprecated in February 2025."
+      ]
+    },
+    "backend": {
+      "choice": "Go (net/http)",
+      "justification": "A small static binary. Goroutines handle a lot of open sockets without a heavy runtime. Peak 5,000, workload write_heavy, realtime on. The hot path is open sockets, which is the workload Go is being chosen for.",
+      "driven_by": [
+        "team.languages",
+        "team.size",
+        "team.has_devops",
+        "project.type",
+        "requirements.realtime",
+        "scale.peak_concurrent_users",
+        "priorities.performance"
+      ],
+      "alternatives": [
+        {
+          "choice": "Go sync service (net/http) + NestJS API",
+          "why_not": "Go sync service (net/http) + NestJS API is a weaker match for the latency target and the live workload."
+        },
+        {
+          "choice": "NestJS",
+          "why_not": "NestJS is a weaker match for the latency target and the live workload."
+        }
+      ],
+      "tradeoffs": [
+        "You write more of the boring pieces yourself: validation, admin, migrations."
+      ]
+    },
+    "database": {
+      "choice": "PostgreSQL (Amazon RDS for PostgreSQL in eu-central-1 (Frankfurt))",
+      "justification": "Relational, ACID, and available as a managed service in Mumbai, the EU, and the US. The default for money, bookings, and tenancy. Placement follows the host pin: eu-central-1 (Frankfurt).",
+      "driven_by": [
+        "project.type",
+        "requirements.payments",
+        "requirements.multi_tenant",
+        "infrastructure.data_residency",
+        "infrastructure.cloud_preference",
+        "requirements.availability",
+        "scale.users_12_months",
+        "team.vendor_lock_in_tolerance"
+      ],
+      "alternatives": [
+        {
+          "choice": "MySQL",
+          "why_not": "MySQL is a looser fit for this team and for this kind of product."
+        },
+        {
+          "choice": "Microsoft SQL Server",
+          "why_not": "Microsoft SQL Server is a looser fit for this team and for this kind of product."
+        }
+      ],
+      "tradeoffs": [
+        "A single small node will not meet 99.99 on its own. You pay for a standby.",
+        "Very large analytical scans want a column store beside it, not instead of it, once you pass a few terabytes."
+      ]
+    },
+    "hosting": {
+      "choice": "Amazon ECS on Fargate in eu-central-1 (Frankfurt)",
+      "justification": "cloud_preference is any, deployment_model is managed_cloud, data_residency resolves to eu. The pin is eu-central-1 (Frankfurt). Containers in the region you pick, including ap-south-1 Mumbai, without running Kubernetes.",
+      "driven_by": [
+        "infrastructure.cloud_preference",
+        "infrastructure.deployment_model",
+        "infrastructure.data_residency",
+        "compliance",
+        "budget.monthly_infra_usd",
+        "team.has_devops",
+        "requirements.availability",
+        "scale.peak_concurrent_users"
+      ],
+      "alternatives": [
+        {
+          "choice": "Azure App Service",
+          "why_not": "Azure App Service is a weaker match for the latency target and the live workload."
+        },
+        {
+          "choice": "Google Cloud Run",
+          "why_not": "Google Cloud Run is a weaker match for the latency target and the live workload."
+        }
+      ],
+      "tradeoffs": [
+        "IAM, VPC, and the load balancer are real work. A team with no operator will feel it.",
+        "NAT gateway charges surprise people."
+      ]
+    },
+    "supporting": [
+      {
+        "layer": "cache",
+        "choice": "Amazon ElastiCache for Valkey",
+        "justification": "Peak concurrency is 5,000. A small cache holds sessions, OTP attempts, and hot reads so the database is not the first thing to fall over.",
+        "driven_by": [
+          "scale.peak_concurrent_users",
+          "requirements.availability",
+          "requirements.realtime"
+        ],
+        "alternatives": [
+          {
+            "choice": "Redis on ElastiCache",
+            "why_not": "The managed cache is the same protocol with backups and a patch cycle already solved."
+          }
+        ],
+        "tradeoffs": [
+          "Another process to watch. At a small size it can share a node with the queue."
+        ]
+      },
+      {
+        "layer": "queue",
+        "choice": "Amazon SQS",
+        "justification": "Webhook and payout work should leave the request path. Payments, scoring, or write spikes should retry on their own.",
+        "driven_by": [
+          "requirements.payments",
+          "requirements.ml_features",
+          "scale.workload",
+          "scale.users_12_months"
+        ],
+        "alternatives": [
+          {
+            "choice": "A Postgres job table",
+            "why_not": "It adds a second system before the volume requires one."
+          }
+        ],
+        "tradeoffs": [
+          "Poison messages need a dead-letter view, or they vanish into retries."
+        ]
+      },
+      {
+        "layer": "auth",
+        "choice": "Auth.js (self-hosted)",
+        "justification": "Social login, with the profile row stored in our database. The OAuth client secret stays on the server.",
+        "driven_by": [
+          "requirements.auth",
+          "infrastructure.data_residency",
+          "compliance"
+        ],
+        "alternatives": [
+          {
+            "choice": "Clerk",
+            "why_not": "Clerk is fast to drop in and keeps user records on Clerk's side. That fights a residency or GDPR story we can avoid by holding the row ourselves."
+          }
+        ],
+        "tradeoffs": [
+          "You own password-less session bugs. Keep the provider list short."
+        ]
+      },
+      {
+        "layer": "storage",
+        "choice": "Amazon S3 in eu-central-1 (Frankfurt) with SSE-KMS",
+        "justification": "Uploads have to live somewhere durable. The bucket is private. The app issues short-lived URLs. KYC, health, or customer files do not sit on a public CDN.",
+        "driven_by": [
+          "requirements.file_media_storage",
+          "infrastructure.data_residency",
+          "data.sensitivity",
+          "compliance"
+        ],
+        "alternatives": [
+          {
+            "choice": "MinIO on EC2",
+            "why_not": "A second file system splits retention and access reviews. One bucket next to the app is enough."
+          }
+        ],
+        "tradeoffs": [
+          "Lifecycle rules are part of the design. Nobody deletes old uploads unless you ask the bucket to."
+        ]
+      },
+      {
+        "layer": "cdn",
+        "choice": "Amazon CloudFront (static web bundle only)",
+        "justification": "Cache the public web bundle close to users. Private uploads and payment payloads go straight to the origin in the pinned region.",
+        "driven_by": [
+          "project.platforms",
+          "requirements.seo_critical",
+          "data.sensitivity"
+        ],
+        "alternatives": [
+          {
+            "choice": "Cloudflare in front of the whole origin",
+            "why_not": "A global cache in front of personal data fights the residency pin."
+          }
+        ],
+        "tradeoffs": [
+          "A bad cache key will serve one user's file to another. Private buckets stay unsigned-public."
+        ]
+      },
+      {
+        "layer": "realtime",
+        "choice": "Yjs over WebSockets on the Go service, fan-out through Valkey",
+        "justification": "Live updates are required and the peak is 5,000. A CRDT (Yjs) fits a shared board or any document several people edit. Valkey pub/sub lets more than one sync node see the same room.",
+        "driven_by": [
+          "requirements.realtime",
+          "scale.peak_concurrent_users",
+          "requirements.p95_latency_ms",
+          "team.languages"
+        ],
+        "alternatives": [
+          {
+            "choice": "Liveblocks",
+            "why_not": "A managed realtime vendor stores the hot path outside the region pin, and it is a new bill for a problem the API can hold."
+          }
+        ],
+        "tradeoffs": [
+          "Sticky sessions or a pub/sub adapter are mandatory once you run two copies. One copy is a single point of failure."
+        ]
+      },
+      {
+        "layer": "payments",
+        "choice": "Stripe",
+        "justification": "Seat or card billing for users who can be in the EU. Stripe has the billing primitives. Card data stays at Stripe. The description prices per seat, so use the processor's subscription product rather than a home-grown renewals cron.",
+        "driven_by": [
+          "requirements.payments",
+          "infrastructure.data_residency",
+          "compliance",
+          "project.description"
+        ],
+        "alternatives": [
+          {
+            "choice": "Mollie",
+            "why_not": "Mollie is a strong EU processor. Stripe was chosen because per-seat billing is a product there, not a cron you write."
+          }
+        ],
+        "tradeoffs": [
+          "Do not store PAN, CVV, or UPI PIN. If you do, PCI scope explodes and this recommendation no longer holds."
+        ]
+      },
+      {
+        "layer": "ci_cd",
+        "choice": "GitHub Actions",
+        "justification": "A short pipeline: test, then deploy with short-lived cloud credentials. Keep production secrets out of the repo.",
+        "driven_by": [
+          "team.size",
+          "team.has_devops",
+          "infrastructure.deployment_model"
+        ],
+        "alternatives": [
+          {
+            "choice": "GitLab CI",
+            "why_not": "It is a fine CI. It is also a second account this team has not said they already run."
+          }
+        ],
+        "tradeoffs": [
+          "A green pipeline is not a test plan. Someone still has to write the tests."
+        ]
+      },
+      {
+        "layer": "observability",
+        "choice": "Amazon CloudWatch",
+        "justification": "Availability target is 99.9. You need a health check, a latency chart, and an alert that reaches a person. Keep the logs in the same region as the data.",
+        "driven_by": [
+          "requirements.availability",
+          "team.has_devops",
+          "scale.users_12_months"
+        ],
+        "alternatives": [
+          {
+            "choice": "Self-hosted Grafana",
+            "why_not": "More moving parts, or a log vendor that may store text outside the pin."
+          }
+        ],
+        "tradeoffs": [
+          "Log volume is a bill. Sample debug lines. Do not log OTP codes, tokens, or payment payloads."
+        ]
+      }
+    ]
+  },
+  "estimated_monthly_cost_usd": {
+    "min": 260,
+    "max": 958,
+    "assumptions": [
+      "Compute (aws_ecs, mid band) about 120 to 400 USD.",
+      "PostgreSQL (aws, mid band) about 90 to 250 USD.",
+      "Managed cache (aws) about 40 to 120 USD.",
+      "Object storage is priced near 0.023 USD per GB-month plus requests. Egress is the part that moves the top of the band.",
+      "CloudFront for public web assets only. Private objects stay off the CDN.",
+      "Payment gateway fees are a percentage of volume and are not in this infra band.",
+      "CloudWatch logs and metrics. The top of the band is chatty debug logs.",
+      "CI minutes are assumed inside the free tier for this team size.",
+      "SQS at this volume is close to free.",
+      "Scale band is mid: 50000 users at 12 months, peak 5000, 200.0 GB stored.",
+      "This is an order-of-magnitude band, not an invoice. Taxes, support plans, and human time are excluded."
+    ]
+  },
+  "warnings": [
+    {
+      "code": "LATENCY_TARGET",
+      "severity": "warning",
+      "message": "p95_latency_ms is 100 with realtime on and a peak of 5,000. That is possible inside one region and unlikely across continents or through cold starts. Measure the fan-out before you sign the number.",
+      "fields": [
+        "requirements.p95_latency_ms",
+        "requirements.realtime",
+        "scale.peak_concurrent_users"
+      ]
+    },
+    {
+      "code": "GDPR",
+      "severity": "info",
+      "message": "GDPR applies. Sign a DPA with each processor, keep a record of processing, and do not treat a vendor certificate as your compliance.",
+      "fields": [
+        "compliance"
+      ]
+    },
+    {
+      "code": "GDPR_REGION",
+      "severity": "info",
+      "message": "GDPR is in the list and no residency was set. The stack is placed in the EU. A transfer tool is still your job if any processor sits outside that region.",
+      "fields": [
+        "compliance",
+        "infrastructure.data_residency"
+      ]
+    },
+    {
+      "code": "OVERENGINEERING_AVOIDED",
+      "severity": "info",
+      "message": "Microservices and Kubernetes were not chosen. The team is 5 and the 12 month user count is 50,000. A single deployable is the design until those numbers move.",
+      "fields": [
+        "team.size",
+        "scale.users_12_months",
+        "team.has_devops"
+      ]
+    },
+    {
+      "code": "PCI_SCOPE",
+      "severity": "info",
+      "message": "Keep card data at the payment aggregator and this app stays on the short PCI questionnaire. The moment you store PAN or CVV, stop and redesign.",
+      "fields": [
+        "compliance",
+        "requirements.payments"
+      ]
+    }
+  ],
+  "assumptions": [
+    "team.vendor_lock_in_tolerance defaulted to medium.",
+    "budget.existing_licences defaulted to an empty list.",
+    "operations.on_call defaulted to false.",
+    "scale.geographic_spread defaulted to national.",
+    "data.sensitivity defaulted to confidential because a privacy law is set.",
+    "requirements.expected_rps_peak was not set. Capacity uses peak concurrency (5000), which is roughly 500 requests per second if about one in ten connected users acts at once.",
+    "GDPR is set and data_residency was none, so the engine pins hosting to an EU region."
+  ],
+  "validation_errors": []
+}
